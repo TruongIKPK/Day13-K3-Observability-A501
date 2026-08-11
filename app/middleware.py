@@ -18,7 +18,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         
         bind_contextvars(correlation_id=correlation_id)
         request.state.correlation_id = correlation_id
-        
+
         start = time.perf_counter()
         response = await call_next(request)
         
