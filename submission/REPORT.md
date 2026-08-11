@@ -6,7 +6,7 @@
 |---|---|
 | **Tên nhóm** | A501 |
 | **Repository URL** | https://github.com/TruongIKPK/Day13-K3-Observability-A501 |
-| **Commit SHA cuối** | _(cập nhật sau khi commit)_ |
+| **Commit SHA cuối** | 802be8a |
 
 ### Thành viên và phân công:
 
