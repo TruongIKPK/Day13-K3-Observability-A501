@@ -27,6 +27,7 @@ async def startup() -> None:
     log.info(
         "app_started",
         service=os.getenv("APP_NAME", "day13-observability-lab"),
+        correlation_id="system-startup",
         env=os.getenv("APP_ENV", "dev"),
         payload={"tracing_enabled": tracing_enabled()},
     )
@@ -51,7 +52,7 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
         model=agent.model,
         env=os.getenv("APP_ENV", "dev"),
     )
-    
+
     log.info(
         "request_received",
         service="api",
