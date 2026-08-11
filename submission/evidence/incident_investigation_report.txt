@@ -1,0 +1,55 @@
+=== CP3 INCIDENT INVESTIGATION SUMMARY ===
+Challenge ID   : day13-k3-observability-v1
+Cohort         : K3
+Incident Type  : rag_slow
+Affected Feature: refund
+Latency Threshold (SLO): 2000ms
+
+--- METRICS EVIDENCE ---
+  latency_p50  : 150.0 ms  (NORMAL - non-refund baseline)
+  latency_p95  : 2652.0 ms (BREACH - SLO threshold 2000ms)
+  latency_p99  : 2652.0 ms (BREACH)
+  error_rate   : 0%        (no errors, just severe slowness)
+  quality_avg  : 0.87      (unaffected)
+
+--- TRACE EVIDENCE ---
+  Span 'retrieve' (mock_rag): duration ~2500ms (rag_slow=True -> time.sleep(2.5))
+  Span 'generate' (mock_llm): duration ~150ms  (normal)
+  Root span 'run' (agent)   : duration ~2651ms (bottleneck = retrieve)
+
+--- LOG EVIDENCE (Challenge Correlation IDs) ---
+  [request_received] req-42775b68 | k3-challenge-s04
+    message: "Can a customer request a refund after purchase?"
+  [response_sent]    req-42775b68 | latency=2651ms | cost=$0.001977 | quality=0.9 | ts=2026-08-11T03:41:14.840772Z
+
+  [request_received] req-b49153d3 | k3-challenge-s01
+    message: "What is your refund policy?"
+  [response_sent]    req-b49153d3 | latency=2651ms | cost=$0.001902 | quality=0.9 | ts=2026-08-11T03:41:17.495502Z
+
+  [request_received] req-0ab48718 | k3-challenge-s03
+    message: "Explain the refund window and required evidence."
+  [response_sent]    req-0ab48718 | latency=2651ms | cost=$0.002772 | quality=0.8 | ts=2026-08-11T03:41:20.150336Z
+
+  [request_received] req-7175a684 | k3-challenge-s02
+    message: "What proof is required for a refund?"
+  [response_sent]    req-7175a684 | latency=2652ms | cost=$0.001773 | quality=0.9 | ts=2026-08-11T03:41:22.809056Z
+
+  [request_received] req-93cc15e7 | k3-challenge-s05
+    message: "Summarize the refund policy for a support agent."
+  [response_sent]    req-93cc15e7 | latency=2651ms | cost=$0.002562 | quality=0.8 | ts=2026-08-11T03:41:25.464125Z
+
+--- ROOT CAUSE ---
+  mock_rag.retrieve() bi tri hoan 2500ms khi STATE['rag_slow']=True.
+  Day la bottleneck duy nhat: LLM generate van chay binh thuong ~150ms.
+  Toan bo 5 request feature='refund' deu bi anh huong (latency ~2651ms moi request).
+
+--- FIX ACTION ---
+  Tat incident: POST /incidents/rag_slow/disable
+  Root fix: Them circuit breaker + timeout (e.g., 500ms) cho Vector DB retrieve().
+  Implement retry voi exponential backoff cho transient slowdowns.
+
+--- PREVENTIVE MEASURES ---
+  1. Alert rule: latency_p95 > 1500ms trong 2 phut -> PagerDuty/Slack alert.
+  2. Dashboard SLO line tai 2000ms tren panel Latency Percentiles.
+  3. Span timeout: dat timeout=500ms cho span 'retrieve', tra fallback answer neu timeout.
+  4. Health check: endpoint /health bao gom trang thai Vector DB connectivity.
